@@ -5,12 +5,12 @@
         <logfileRootDir>C:\LisaTestResults\</logfileRootDir>
         <defaultSnapshot>ICABase</defaultSnapshot>
         <testparams>
-            <param>REPOSITORY_SERVER=10.156.76.149</param>
+            <param>REPOSITORY_SERVER=10.172.2.1</param>
             <param>REPOSITORY_EXPORT=/usr/lisa/public</param>
-            <param>NFS_SERVER=10.156.76.149</param>
+            <param>NFS_SERVER=10.172.2.1</param>
             <param>NFS_EXPORT=/usr/lisa/public</param>
             <param>RootDir=D:\code\BIS_automation\lisa\</param>
-            <param>TARGET_ADDR=10.156.76.149</param>  <!--target address to ping external network-->
+            <param>TARGET_ADDR=10.172.2.1</param>  <!--target address to ping external network-->
             <param>DEBUG=0</param>
         </testparams>
     </global>
@@ -479,7 +479,7 @@
             <noReboot>True</noReboot>
             <testparams>
                 <param>NIC=NetworkAdapter,External,ExternalNet</param>
-                <param>TARGET_ADDR=10.156.76.149</param>
+                <param>TARGET_ADDR=10.172.2.1</param>
                 <param>TC_COVERED=NET-05</param>
             </testparams>
         </test>
@@ -509,7 +509,7 @@
             <noReboot>True</noReboot>
             <testparams>
                 <param>NIC=NetworkAdapter,External,ExternalNet</param>
-                <param>TARGET_ADDR=10.156.76.149</param>
+                <param>TARGET_ADDR=10.172.2.1</param>
                 <param>TC_COVERED=NET-17</param>
             </testparams>
         </test>
@@ -575,7 +575,7 @@
             <testparams>
                 <param>NIC=NetworkAdapter,External,ExternalNet</param>
                 <param>TC_COVERED=NET-15</param>
-                <param>TARGET_ADDR=10.156.76.149</param>
+                <param>TARGET_ADDR=10.172.2.92</param>
             </testparams>
         </test>
 
@@ -1221,7 +1221,7 @@
             <testparams>
                 <param>NIC=NetworkAdapter,External,ExternalNet</param>
                 <param>NIC=NetworkAdapter,External,ExternalNet</param>
-                <param>TARGET_ADDR=10.156.76.149</param>
+                <param>TARGET_ADDR=10.172.2.1</param>
                 <param>TC_COVERED=NET-07</param>
             </testparams>
         </test>
@@ -1236,7 +1236,7 @@
             <noReboot>False</noReboot>
             <testparams>
                 <param>NIC=NetworkAdapter,External,ExternalNet</param>
-                <param>TARGET_ADDR=10.156.76.149</param>
+                <param>TARGET_ADDR=10.172.2.1</param>
                 <param>TC_COVERED=TC110</param>
             </testparams>
         </test>
@@ -1262,7 +1262,7 @@
             <noReboot>False</noReboot>
             <testparams>
                 <param>NIC=NetworkAdapter,External,ExternalNet</param>
-                <param>TARGET_ADDR=10.156.76.149</param>
+                <param>TARGET_ADDR=10.172.2.1</param>
                 <param>TC_COVERED=TC107</param>
             </testparams>
         </test>
@@ -1279,7 +1279,7 @@
                 <param>NIC=NetworkAdapter,External,ExternalNet,00155d33d0fc</param>
                 <param>TC_COVERED=NET-09</param>
                 <param>MAC=00:15:5d:33:d0:fc</param>
-                <param>TARGET_ADDR=10.156.76.149</param>
+                <param>TARGET_ADDR=10.172.2.1</param>
             </testparams>
         </test>
         <test>
@@ -1571,7 +1571,7 @@
             <testparams>
                  <param>TC_COVERED=KVP-04</param>
                  <param>Key=HostName</param>
-                 <param>Value=use_your.FQDN.here.example.com</param>  
+                 <param>Value=decui-2012r2.fareast.corp.microsoft.com</param>
                  <param>Pool=3</param>
             </testparams>
         </test>
@@ -1847,7 +1847,7 @@
             <hvServer>localhost</hvServer>
             <vmName>FreeBSD_VM1</vmName>
             <os>FreeBSD</os>
-            <ipv4>10.156.76.113</ipv4>
+            <ipv4>10.172.3.37</ipv4>
             <sshKey>lisa_id_rsa.ppk</sshKey>
             <suite>FeatureTest</suite>
         </vm>

@@ -1,0 +1,10 @@
+WS2012R2/lisa/ssh/*
+WS2012R2/lisa/bin/*
+WS2012R2/lisa/TestLogs/*
+WS2012R2/lisa/tools/icaserial/build/*
+WS2012R2/lisa/TestResults/*
+*.log
+WS2012R2/lisa/tools/*
+WS2012R2/lisa/Infrastructure/*
+WS2012R2/lisa/testdata/*
+WS2012R2/stress/pool/machines

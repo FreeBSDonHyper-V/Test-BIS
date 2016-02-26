@@ -30,7 +30,6 @@
                 <suiteTest>CheckCPUCount-4</suiteTest>
                 <suiteTest>ShutdownFromHyperV-4</suiteTest>
                 <suiteTest>CheckCPUCount-8</suiteTest>
-                <suiteTest>ShutdownFromHyperV-4</suiteTest>                  
 
                 <suiteTest>Heartbeat</suiteTest>
                 <suiteTest>ShutdownFromHyperV</suiteTest>   

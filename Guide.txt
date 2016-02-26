@@ -1,0 +1,222 @@
+A guide to run the BIS test cases on Hyper-V
+
+To run the test cases against the target FreeBSD VM running on Hyper-V 2012 R2
+(i.e., the host should be Windows Server 2012 R2), first we need to set up the
+target FreeBSD VM (and an auxiliary VM for some inter-VM network test cases),
+then we need to make some preparation work on the host and finally we can
+start to run the test cases.
+
+The core of the test infrastructure is the PowerShell script lisa.ps1. It
+parses the XML file defining the details of the test cases, performs the
+necessary actions in the host side (e.g., making changes to the VM’s
+Setting, hot-adding a disk to the VM, etc), creates the target FreeBSD VM,
+passes the shell script (which will be run in the VM) into the VM by
+pscp.exe, asks the VM to run the shell script by plink.exe, parses the output
+of the shell script and finally lisa.ps1 knows if a test case fails or passes.
+
+1.	Install the target FreeBSD VM in the host and make the necessary
+changes in the VM
+	Note: the VM is configured with a Hyper-V network device by default. We
+should make sure the device is connected to a Hyper-V Virtual Switch which is
+connected to the physical network of the host, and we should make sure there is
+a DHCP server in the physical network environment, otherwise, we have to
+statically assign a valid IP address for the VM.
+	The VM name should contain A-Z, a-z, 0-9 and _ only, and especially, -
+is not allowed in the VM name (some places in the test code can't handle that
+properly).
+
+1.1	On Windows Server 2012 R2 host, install the target FreeBSD VM by the .ISO
+file, e.g. ftp://ftp.freebsd.org/pub/FreeBSD/releases/ISO-IMAGES/10.2/FreeBSD-10.2-RELEASE-amd64-disc1.iso.
+
+1.2	In the VM, we need to do the following things.
+
+1.2.1	Log in with root and install the required packages by
+	# pkg install unix2dos python git subversion gcc bash
+	# ln -s /usr/local/bin/bash /bin/bash
+
+1.2.2	Enable SSH remote login by root
+	Update /etc/ssh/sshd_config by changing "#PermitRootLogin no" to
+"PermitRootLogin yes".
+
+1.2.3	Use "ssh-keygen" to create /root/.ssh/id_rsa and /root/.ssh/id_rsa.pub;
+	And, run
+	# mv -iv  ~/.ssh/id_rsa.pub  ~/.ssh/authorized_keys
+	# chmod 600 ~/.ssh/authorized_key
+	
+	We'll need to copy ~/.ssh/id_rsa into the host, convert it into the
+private key format accepted by plink/pscp/putty (see Section 2.9).
+	
+1.2.4	Update /etc/rc.conf
+	
+	ifconfig_hn0="SYNCDHCP"
+	ifconfig_hn0_ipv6="inet6 accept_rtadv"
+	
+	(If the VM uses static IP, make the change accordingly)
+
+1.2.5	Add these configure to /etc/rc.conf
+
+	firewall_enable="NO"
+	sendmail_enable="NONE"
+	sendmail_msp_queue_enable="NO"
+	sendmail_outbound_enable="NO"
+	sendmail_submit_enabled="NO”
+
+
+2.	make some preparation work on the host
+
+2.1	Install git (https://git-scm.com/download/win) and clone the test code from github
+	
+	In the host, run the Command Prompt (cmd.exe) and clone the code to c:\Test-BIS:
+
+	C:\Users\decui>cd c:\
+
+	c:\>git clone https://github.com/FreeBSDonHyper-V/Test-BIS.git
+	Cloning into 'Test-BIS'...
+	remote: Counting objects: 430, done.
+	remote: Compressing objects:  77% (196/254)    eceiving objects:   3% (13/430)  remote: Compressing objects: 100% (254/254), done.
+	emote: Total 430 (delta 172), reused 428 (delta 170), pack-reused R0
+	Receiving objects: 100% (430/430), 25.44 MiB | 5.08 MiB/s, done.
+	Resolving deltas:   1% (2/172)
+	Resolving deltas: 100% (172/172), done.
+	Checking connectivity... done.
+
+	c:\>cd Test-BIS
+	c:\Test-BIS>
+
+
+2.2	Install putty (http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html)
+	Typically, it's installed into "C:\Program Files (x86)\PuTTY\" and we can find
+the programs pscp.exe, plink.exe, putty.exe and puttygen.exe there.
+	
+2.3	"cd" into "c:\Test-BIS\WS2012R2\lisa\tools\FreeBSD\", and "pscp" the 3
+files (connector.h, hv_kvp.h and kvp_client.c) into target FreeBSD VM's /root/,
+and run this in the VM:
+	
+	# gcc kvp_client.c -o /usr/bin/kvp_client
+
+2.4 	Shut down the VM and create a checkpoint and change the checkpoint
+name to "ICABase"
+
+2.5	Create 3 virtual disks (PassThroughDisk-1.vhd, PassThroughDisk-2.vhd,
+PassThroughDisk-3.vhd) for "Pass Through Drive" test cases
+
+	We need to run this in the Power Shell command line, e.g., for the first vhd file, we can run
+
+	New-VHD -Path C:\test\PassThroughDisk-1.vhd -size 5GB -Fixed 
+	Diskpart> select vdisk file="C:\test\PassThroughDisk-1.vhd"
+	Diskpart> attach vdisk
+	Diskpart> convert GPT
+	Diskpart> offline disk
+	
+	(We can simply make 2 copies of the first file and rename them to
+PassThroughDisk-2.vhd and PassThroughDisk-3.vhd).
+
+	Note: every time after we reboot host, we must attach the 3 files by
+Disk Management (diskmgmt.msc)'s "Action -> Attach VHD" and "Offline" them.
+
+
+2.6	Create the 3 vhd files (icaDiffVhdx4k.vhdx, icaDiffVhdx512.vhdx and
+icaDiffParent.vhd) under "C:\Users\Public\Documents\Hyper-V\Virtual Hard Disks\".
+They are needed for some storage test cases.
+
+	We can do this by Disk Management (diskmgmt.msc) , e.g., for the first
+file, use the menu "Action -> Create VHD", choose "2GB, VHDX, Dynamically expanding; OK";
+next, right click the virtual disk and choose "Initialize disk, GPT; OK" and finally, "Detach VHD" from Disk Management. 
+
+	Note: the third file is of the .vhd format, rather than .vhdx: remember to use
+"2GB, VHD (not VHDX), Dynamically expanding; OK".
+
+2.7	In Hyper-V Manager, use "Virtual Switch Manager" to create 3 virtual
+switches: ExternalNet, PrivateNet and InternalNet.
+
+2.8	Create the auxiliary VM.
+	The VM's OS can be FreeBSD, Linux or even Windows, but here we still use
+(another) FreeBSD VM as the example.
+	The VM should be configured with 3 Hyper-V Network Adapters: the first is
+connected to the "ExternalNet" virtual switch, and the second is connected to
+"PrivateNet" (we use 192.168.3.100 for the NIC), and the third is connected to
+"InternalNet" (we use 192.168.1.100 for the NIC):
+	  
+	root@bsd101:~ # cat /etc/rc.conf
+	hostname="bsd101"
+	ifconfig_hn0="SYNCDHCP"
+	ifconfig_hn0_ipv6="inet6 accept_rtadv"
+	ifconfig_hn1="inet 192.168.3.100 netmask 255.255.255.0"
+	ifconfig_hn2="inet 192.168.1.100 netmask 255.255.255.0"
+	sshd_enable="YES"
+	# Set dumpdev to "AUTO" to enable crash dumps, "NO" to disable
+	dumpdev="AUTO"
+
+	Note: the auxiliary VM is running all the time, when the target VM is being tested.
+
+2.9	Copy the target VM's /root/.ssh/id_rsa (see Section 1.2.3) into the host
+using pscp.exe and use puttygen.exe to convert into into the private key format
+accepted by putty and plink.exe (Load the existing private key file and Save the
+private key to "C:\Test-BIS\WS2012R2\lisa\ssh\lisa_id_rsa.ppk").
+
+2.10	Copy the whole directory "C:\Program Files (x86)\PuTTY\" into "C:\Test-BIS\WS2012R2\lisa\"
+and rename the directory name to "bin", so the plink.exe/pscp.exe,.etc should
+appear in C:\Test-BIS\WS2012R2\lisa\bin\ too.
+
+2.11	Review the configuraiton file for the test cases:
+C:\Test-BIS\WS2012R2\lisa\tools\FreeBSD\automation\FreeBSD_feature_test.xml
+and make necessary changes to it
+
+	Use https://github.com/FreeBSDonHyper-V/Test-BIS/commit/7f9b34cc226771c595cab5041062d8cf58c3273e as a reference:
+
+	1) find the IP of gateway of the physical and use that to replace all
+the occurrences of "10.156.76.149" in the config file. The IP will be mainly
+used by some network test cases for the ping test.
+
+	2) replace the "use_your.FQDN.here.example.com" with the real name of the host, e.g.
+	
+             <testparams>
+                  <param>TC_COVERED=KVP-04</param>
+                  <param>Key=HostName</param>
+-                 <param>Value=use_your.FQDN.here.example.com</param>  
++                 <param>Value=decui-2012r2.fareast.corp.microsoft.com</param>
+                  <param>Pool=3</param>
+             </testparams>
+
+	This is for a KVP test case.
+
+	3) fill the target FreeBSD VM's name and IP address like this (note the lines vmName and ipv4)
+
+        <vm>
+            <hvServer>localhost</hvServer>
+            <vmName>FreeBSD_VM1</vmName>
+            <os>FreeBSD</os>
+            <ipv4>10.172.3.37</ipv4>
+            <sshKey>lisa_id_rsa.ppk</sshKey>
+            <suite>FeatureTest</suite>
+        </vm>
+
+3.	Finally, it should be all set and we can run the test cases now!
+	
+	Run the Power Shell program with "Run As Administrator" like this
+
+
+	Windows PowerShell
+	Copyright (C) 2014 Microsoft Corporation. All rights reserved.
+
+	PS C:\windows\system32> cd c:\Test-BIS
+	PS C:\Test-BIS> cd .\WS2012R2\lisa
+	PS C:\Test-BIS\WS2012R2\lisa> .\lisa.ps1 run tools\FreeBSD\automation\FreeBSD_feature_test.xml
+	LIS Automation script - version 2.0.0
+	Info : FreeBSD_VM1 currentTest updated to CheckMemoryCapacity-2GB
+	Info : FreeBSD_VM1 Status for test CheckMemoryCapacity-2GB  = Success
+	Info : FreeBSD_VM1 currentTest updated to CheckMemoryCapacity-512MB
+	Info : FreeBSD_VM1 Status for test CheckMemoryCapacity-512MB  = Success
+	Info : FreeBSD_VM1 currentTest updated to CheckCPUCount-2
+	...
+
+	When the whole test is finished, we can also find the test logs at C:\LisaTestResults\
+
+
+4.	Known issues
+4.1	FreeBSD 10.1 and 10.2 VM has a KVP bug, which can hang the execution of the test.
+	It's strongly recommended the VM kernels should be patched with the fix:
+https://github.com/freebsd/freebsd/commit/7330ea873340f2c45f4ce57a83881226f441e142
+
+	FreeBSD 10.3 has included the fix.
+
